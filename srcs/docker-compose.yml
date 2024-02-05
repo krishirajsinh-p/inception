@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  mariadb:
+    container_name: mariadb
+    build:
+      context: .
+      dockerfile: requirements/mariadb/Dockerfile
+      args:
+        DB_NAME: ${DB_NAME}
+        MYSQL_USER: ${MYSQL_USER}
+        MYSQL_PASS: ${MYSQL_PASS}
+        MYSQL_ROOT_PASS: ${MYSQL_ROOT_PASS}
+    volumes:
+      - mariadb:/var/lib/mysql
+    networks:
+      - inception
+    restart: always
+
+  wordpress:
+    container_name: wordpress
+    depends_on:
+      - mariadb
+    build:
+      context: .
+      dockerfile: requirements/wordpress/Dockerfile
+      args:
+        DB_NAME: ${DB_NAME}
+        MYSQL_USER: ${MYSQL_USER}
+        MYSQL_PASS: ${MYSQL_PASS}
+    volumes:
+      - wordpress:/var/www/
+    networks:
+      - inception
+    restart: always
+
+  nginx:
+    container_name: nginx
+    depends_on:
+      - wordpress
+    build:
+      context: .
+      dockerfile: requirements/nginx/Dockerfile
+    volumes:
+      - wordpress:/var/www/
+    networks:
+      - inception
+    restart: always
+    ports:
+      - "443:443"
+
+volumes:
+  wordpress:
+    driver_opts:
+      o: bind
+      type: none
+      device: /home/${USER}/data/wordpress
+
+  mariadb:
+    driver_opts:
+      o: bind
+      type: none
+      device: /home/${USER}/data/mariadb
+
+networks:
+  inception:
+    driver: bridge
